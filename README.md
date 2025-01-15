@@ -1,5 +1,5 @@
 # Simplest Radical Form Calculator
-This is just a simple project I did for fun. It really wasn't that hard.
+This is just a simple project I made for fun. It find the simpest radical form of any square root you put into it and also displays a treelike breakdown of how it came to that answer.
 ### Demo
 ![video demo](example.mp4)
 ### Dependencies
