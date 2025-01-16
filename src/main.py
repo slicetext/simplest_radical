@@ -1,15 +1,21 @@
 import math
 import getopt, sys
 argumentList = sys.argv[1:]
-options="n"
-long_options=["NoColor"]
+options="nth"
+long_options=["NoColor","NoTree","Help"]
 color=True
+tree=True
 try:
     # Parsing argument
     arguments, values = getopt.getopt(argumentList, options, long_options)
     for currentArgument, currentValue in arguments:
         if currentArgument in ("-n", "--NoColor"):
             color=False
+        if currentArgument in ("-t", "--NoTree"):
+            tree=False
+        if currentArgument in ("-h", "--Help"):
+            for i in ["This program calculates the simplest radical form from the inputed number.","Usage: square_root [options]","--NoColor, -n No Colors","--NoTree, -t Don't show tree","--Help, -h Show this message"]:
+                print(i)
 except getopt.error as error:
     print(str(error))
 squares=[]
@@ -74,9 +80,11 @@ while True:
         for j in tree[i]:
             if("*" in str(j) and color==True):
                 print("\033[0;32m",end="")
-            print(j,end=" "*(longest-len(str(j))))
+            if(tree==True):
+                print(j,end=" "*(longest-len(str(j))))
             print("\033[0m",end="")
             cols=cols+1
-        print("")
+        if(tree==True):
+            print("")
     remainder=0
     tree={0:[]}
