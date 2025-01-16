@@ -1,4 +1,17 @@
 import math
+import getopt, sys
+argumentList = sys.argv[1:]
+options="n"
+long_options=["NoColor"]
+color=True
+try:
+    # Parsing argument
+    arguments, values = getopt.getopt(argumentList, options, long_options)
+    for currentArgument, currentValue in arguments:
+        if currentArgument in ("-n", "--NoColor"):
+            color=False
+except getopt.error as error:
+    print(str(error))
 squares=[]
 tree={0:[""]}
 def gen_squares(n):
@@ -28,7 +41,7 @@ def square_root(num,index=0,index2=1):
         tree[index].append("")
     while(len(tree[index+1])<index2+1):
         tree[index+1].append("")
-    tree[index][index2]=int(num)
+    tree[index][index2]=str(num)
     if(isInteger(math.sqrt(num))):
         tree[index+1][index2]=str(int(math.sqrt(num)))+"*"
         return math.sqrt(num)
@@ -59,7 +72,10 @@ while True:
         chars=cols_row[i]
         #print(" "*(longest*num_cols-chars-1),end="")
         for j in tree[i]:
+            if("*" in str(j) and color==True):
+                print("\033[0;32m",end="")
             print(j,end=" "*(longest-len(str(j))))
+            print("\033[0m",end="")
             cols=cols+1
         print("")
     remainder=0
