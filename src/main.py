@@ -4,7 +4,7 @@ argumentList = sys.argv[1:]
 options="nth"
 long_options=["NoColor","NoTree","Help"]
 color=True
-tree=True
+show_tree=True
 try:
     # Parsing argument
     arguments, values = getopt.getopt(argumentList, options, long_options)
@@ -12,7 +12,7 @@ try:
         if currentArgument in ("-n", "--NoColor"):
             color=False
         if currentArgument in ("-t", "--NoTree"):
-            tree=False
+            show_tree=False
         if currentArgument in ("-h", "--Help"):
             for i in ["This program calculates the simplest radical form from the inputed number.","Usage: square_root [options]","--NoColor, -n No Colors","--NoTree, -t Don't show tree","--Help, -h Show this message"]:
                 print(i)
@@ -80,11 +80,11 @@ while True:
         for j in tree[i]:
             if("*" in str(j) and color==True):
                 print("\033[0;32m",end="")
-            if(tree==True):
+            if(show_tree==True):
                 print(j,end=" "*(longest-len(str(j))))
             print("\033[0m",end="")
             cols=cols+1
-        if(tree==True):
+        if(show_tree==True):
             print("")
     remainder=0
     tree={0:[]}
