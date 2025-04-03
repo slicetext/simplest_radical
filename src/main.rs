@@ -1,3 +1,8 @@
+use core::fmt;
+use std::io::{self, Write};
+
+use clap::Parser;
+
 const SQUARE_GEN_DEPTH: u32 = 30;
 
 #[derive(Clone, Debug)]
@@ -33,6 +38,13 @@ impl SqrtResult {
             frac,
             tree: tree.clone(),
         }
+    }
+}
+
+// Implement display so the result can be printed by println! in a standard way
+impl fmt::Display for SqrtResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} √{}",self.whole,self.frac)
     }
 }
 
@@ -134,5 +146,56 @@ mod tests {
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 4);
         assert_eq!(root.frac,  3);
+    }
+    #[test]
+    fn test_more_testing() {
+        let calc = Calc::new(24);
+        let root = calc.sqrt(None);
+        assert_eq!(root.whole, 2);
+        assert_eq!(root.frac,  6);
+    }
+}
+
+/// Find the square roots of numbers in simplest radical form
+#[derive(Parser,Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Optional: number to find square root of (if not passed, will enter REPL)
+    number: Option<u32>,
+}
+
+fn main() {
+    let args = Args::parse();
+    match args.number {
+        Some(n) => {
+            let calc = Calc::new(n);
+            let root = calc.sqrt(None);
+            println!("{root}");
+            return;
+        },
+        None => {}
+    }
+
+    // Enter REPL
+    loop {
+        // Print prompt
+        print!("Get root of number: ");
+        io::stdout()
+            .flush()
+            .unwrap();
+        // Read command line input
+        let input = &mut String::new();
+        let _ = io::stdin()
+            .read_line(input)
+            .expect("Invalid input");
+        // Convert input to number
+        let input_num = input
+            .trim()
+            .parse()
+            .unwrap();
+        // Get root and print it
+        let calc = Calc::new(input_num);
+        let root = calc.sqrt(None);
+        println!("{root}");
     }
 }
