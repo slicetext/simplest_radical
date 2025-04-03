@@ -62,13 +62,13 @@ impl Calc {
         let r = match result {
             Some(r) => r,
             _ => SqrtResult {
-                whole: 0,
+                whole: self.num,
                 frac:  0,
                 tree:  TreeNode::new(self.num),
             },
         };
         let mut node = r.tree;
-        let num = node.value;
+        let num = r.whole;
         // Check if number is square, if so return root
         let decimal_root = (num as f32).sqrt();
         match decimal_root.fract() {
@@ -86,16 +86,15 @@ impl Calc {
         for i in &self.squares {
             let node = &mut node;
             // If the square number goes in evenly
-            if ((num / i) as f32).fract() == 0.0 {
-                dbg!("{}",&i);
+            if (num as f32 / *i as f32).fract() == 0.0 {
                 // Create children nodes
-                let a = node.push(TreeNode::new(*i));
-                let b = node.push(TreeNode::new(num / i));
+                let _ = node.push(TreeNode::new(*i));
+                let _ = node.push(TreeNode::new(num / i));
                 // Recurse
-                let whole  = self.sqrt(Some(SqrtResult::new(a,0,node))).whole
-                    * self.sqrt(Some(SqrtResult::new(b,0,node))).whole;
-                let frac  = self.sqrt(Some(SqrtResult::new(a,0,node))).frac
-                    * self.sqrt(Some(SqrtResult::new(b,0,node))).frac;
+                let whole  = self.sqrt(Some(SqrtResult::new(*i,0,node))).whole
+                    * self.sqrt(Some(SqrtResult::new(num/i,0,node))).whole;
+                let frac  = self.sqrt(Some(SqrtResult::new(*i,0,node))).frac
+                    + self.sqrt(Some(SqrtResult::new(num/i,0,node))).frac;
                 let result = SqrtResult::new(whole, frac, node);
 
                 return result;
@@ -127,6 +126,13 @@ mod tests {
         let calc = Calc::new(12);
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 2);
+        assert_eq!(root.frac,  3);
+    }
+    #[test]
+    fn test_more_steps() {
+        let calc = Calc::new(48);
+        let root = calc.sqrt(None);
+        assert_eq!(root.whole, 4);
         assert_eq!(root.frac,  3);
     }
 }
