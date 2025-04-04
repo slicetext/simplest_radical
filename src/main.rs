@@ -66,7 +66,7 @@ impl Calc {
     fn gen_squares(&mut self, depth: u32) {
         // Loop till depth, don't include 1
         for i in 2..(depth+1) {
-            self.squares.push(i*2);
+            self.squares.push(i*i);
         }
     }
     /// Recursively generate simplest radical form square root
@@ -148,7 +148,7 @@ mod tests {
         assert_eq!(root.frac,  3);
     }
     #[test]
-    fn test_more_testing() {
+    fn test_not_square_num_2() {
         let calc = Calc::new(24);
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 2);
