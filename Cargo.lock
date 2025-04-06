@@ -135,7 +135,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sqrt"
+name = "root"
 version = "2.0.0"
 dependencies = [
  "clap",

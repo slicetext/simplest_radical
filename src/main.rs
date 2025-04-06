@@ -1,9 +1,11 @@
 use core::fmt;
-use std::io::{self, Write};
+use std::{collections::VecDeque, io::{self, Write}, ops::{Index, IndexMut}};
 
 use clap::Parser;
 
 const SQUARE_GEN_DEPTH: u32 = 30;
+const RESET_COLOR: &str = "\x1b[0m";
+const HIGHL_COLOR: &str = "\x1b[34m";
 
 #[derive(Clone, Debug)]
 struct TreeNode {
@@ -24,19 +26,71 @@ impl TreeNode {
     }
 }
 
+// implement display se we can print the tree, using BFS (Breadth first search)
+impl fmt::Display for TreeNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut queue: VecDeque<TreeNode> = vec![].into();
+        queue.push_back(self.clone());
+        while queue.len() > 0 {
+            for i in queue.clone() {
+                // Detect dummy character
+                if i.value == 0 {
+                    writeln!(f, "").unwrap();
+                    queue.pop_front();
+                    continue;
+                } else {
+                    // Print real character
+                    write!(f,"{} ",i.value).unwrap();
+                    queue.pop_front();
+                }
+                for j in i.children {
+                    queue.push_back(j);
+                }
+                // Insert dummy newline character
+                if queue.len() > 0 {
+                    queue.push_front(TreeNode::new(0));
+                }
+            }
+        }
+        return Ok(());
+    }
+}
+
+impl Index<usize> for TreeNode {
+    type Output = TreeNode;
+    fn index(&self, index: usize) -> &Self::Output {
+        let mut pos: &TreeNode = self;
+        for i in format!("{:b}",index).chars() {
+            pos = &pos.children[i.to_digit(10).expect("Error converting index") as usize];
+        }
+        return pos;
+    }
+}
+impl IndexMut<usize> for TreeNode {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let mut pos: &mut TreeNode = self;
+        for i in format!("{:b}",index).chars() {
+            pos = &mut pos.children[i.to_digit(10).expect("Error converting index") as usize];
+        }
+        return pos;
+    }
+}
+
 #[derive(Debug)]
 struct SqrtResult {
     whole: u32,
     frac:  u32,
     tree: TreeNode,
+    tree_pos: u32,
 }
 
 impl SqrtResult {
-    fn new(whole: u32, frac: u32, tree: &TreeNode) -> Self {
+    fn new(whole: u32, frac: u32, tree: &TreeNode, tree_pos: u32) -> Self {
         return SqrtResult {
             whole,
             frac,
             tree: tree.clone(),
+            tree_pos,
         }
     }
 }
@@ -44,7 +98,7 @@ impl SqrtResult {
 // Implement display so the result can be printed by println! in a standard way
 impl fmt::Display for SqrtResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} √{}",self.whole,self.frac)
+        write!(f, "{} {}√{}{}",self.whole,HIGHL_COLOR,self.frac,RESET_COLOR)
     }
 }
 
@@ -69,51 +123,76 @@ impl Calc {
             self.squares.push(i*i);
         }
     }
+    // Find square root, no recurse. Return value: (left, right, do_recurse)
+    fn find_sqrt(&self, num: u32) -> (u32, u32, bool) {
+        // Check if number is square, if so return root
+        let decimal_root = (num as f32).sqrt();
+        match decimal_root.fract() {
+            0.0 => return (decimal_root as u32, 0, false),
+            _   => {}
+        }
+
+        // Look through squares, check divisible
+        for i in &self.squares {
+            // Check if divisible
+            match (num as f32 / *i as f32).fract() {
+                0.0 => return (*i, num/i, true),
+                _ => {},
+            }
+        }
+
+        // Prime, return (1, num)
+        return (1, num, false);
+    }
     /// Recursively generate simplest radical form square root
     fn sqrt(&self, result: Option<SqrtResult>) -> SqrtResult {
-        let r = match result {
+        let mut r = match result {
             Some(r) => r,
             _ => SqrtResult {
                 whole: self.num,
                 frac:  0,
                 tree:  TreeNode::new(self.num),
+                tree_pos: 0b0,
             },
         };
-        let mut node = r.tree;
         let num = r.whole;
-        // Check if number is square, if so return root
-        let decimal_root = (num as f32).sqrt();
-        match decimal_root.fract() {
-            0.0 => {
-                node.children.push(TreeNode::new(decimal_root as u32));
-                return SqrtResult{
-                    whole: decimal_root as u32,
-                    frac:  0,
-                    tree: node,
-                };
-            },
-            _   => {}
+        // Find pos in tree
+        let pos = match r.tree.children.len() > 0 {
+            true => &mut r.tree[r.tree_pos as usize],
+            false => &mut r.tree,
         };
-        // Otherwise, find square number divisor
-        for i in &self.squares {
-            let node = &mut node;
-            // If the square number goes in evenly
-            if (num as f32 / *i as f32).fract() == 0.0 {
-                // Create children nodes
-                let _ = node.push(TreeNode::new(*i));
-                let _ = node.push(TreeNode::new(num / i));
-                // Recurse
-                let whole  = self.sqrt(Some(SqrtResult::new(*i,0,node))).whole
-                    * self.sqrt(Some(SqrtResult::new(num/i,0,node))).whole;
-                let frac  = self.sqrt(Some(SqrtResult::new(*i,0,node))).frac
-                    + self.sqrt(Some(SqrtResult::new(num/i,0,node))).frac;
-                let result = SqrtResult::new(whole, frac, node);
 
-                return result;
-            }
+        let root = self.find_sqrt(num);
+
+        pos.push(TreeNode::new(root.0));
+        pos.push(TreeNode::new(root.1));
+
+        // TODO: make this actually work
+        if root.2 {
+            let a = self.sqrt(
+                Some(
+                    SqrtResult::new(
+                        root.0,
+                        0,
+                        &r.tree,
+                        r.tree_pos,
+                    )
+                )
+            );
+            let b = self.sqrt(
+                Some(
+                    SqrtResult::new(
+                        root.1,
+                        0,
+                        &r.tree,
+                        r.tree_pos,
+                    )
+                )
+            );
+            return SqrtResult::new(a.whole * b.whole, a.frac + b.frac, &r.tree, r.tree_pos);
         }
-        // It's prime, return 1 * sqrt(num)
-        return SqrtResult::new(1, num, &node);
+
+        return SqrtResult::new(root.0, root.1, &r.tree, r.tree_pos);
     }
 }
 
@@ -162,15 +241,24 @@ mod tests {
 struct Args {
     /// Optional: number to find square root of (if not passed, will enter REPL)
     number: Option<u32>,
+    /// If passed, tree will not be printed
+    #[clap(long,short='t',action)]
+    notree: bool,
 }
 
 fn main() {
     let args = Args::parse();
     match args.number {
         Some(n) => {
+            // Print root
             let calc = Calc::new(n);
             let root = calc.sqrt(None);
             println!("{root}");
+            // Print Tree
+            if !args.notree {
+                println!("=============");
+                println!("{}",root.tree);
+            }
             return;
         },
         None => {}
@@ -197,5 +285,10 @@ fn main() {
         let calc = Calc::new(input_num);
         let root = calc.sqrt(None);
         println!("{root}");
+        // Print Tree
+        if !args.notree {
+            println!("=============");
+            println!("{}",root.tree);
+        }
     }
 }
