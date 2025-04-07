@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{collections::VecDeque, io::{self, Write}, ops::{Index, IndexMut}};
+use std::{io::{self, Write}, ops::{Index, IndexMut}};
 
 use clap::Parser;
 
@@ -20,31 +20,22 @@ impl TreeNode {
             children: vec![],
         };
     }
-    fn print(&self) {
-        let mut queue: VecDeque<TreeNode> = vec![].into();
-        queue.push_back(self.clone());
-        while queue.len() > 0 {
-            for i in queue.clone() {
-                if i.value != 0 {
-                }
-                // Detect dummy character
-                if i.value == 0 {
-                    println!("");
-                    queue.pop_front();
-                    continue;
-                } else {
-                    // Print real character
-                    print!("{} ",i.value);
-                    queue.pop_front();
-                }
-                for j in i.children {
-                    queue.push_back(j);
-                }
-                // Insert dummy newline character
-                if queue.len() > 0 {
-                    queue.push_front(TreeNode::new(0));
-                }
+    fn print(tree: TreeNode, depth: Option<u32>) {
+        let depth = match depth {
+            Some(d) => d,
+            None => 0,
+        };
+        for i in 0..depth {
+            if i < depth - 1 {
+                print!("  ");
+            } else {
+                print!("└-");
             }
+            io::stdout().flush().unwrap();
+        }
+        println!("{}",tree.value);
+        for i in tree.children {
+            TreeNode::print(i, Some(depth+1));
         }
     }
 }
@@ -155,12 +146,14 @@ impl Calc {
 
         let root = self.find_sqrt(num);
 
-        if self.tree.children.len() > 0 {
-            self.tree[r.tree_pos as usize].children.push(TreeNode::new(root.0));
-            self.tree[r.tree_pos as usize].children.push(TreeNode::new(root.1));
-        } else {
-            self.tree.children.push(TreeNode::new(root.0));
-            self.tree.children.push(TreeNode::new(root.1));
+        if root.0 !=1 && root.1 != 0 {
+            if self.tree.children.len() > 0 {
+                self.tree[r.tree_pos as usize].children.push(TreeNode::new(root.0));
+                self.tree[r.tree_pos as usize].children.push(TreeNode::new(root.1));
+            } else {
+                self.tree.children.push(TreeNode::new(root.0));
+                self.tree.children.push(TreeNode::new(root.1));
+            }
         }
 
         if root.2 {
@@ -254,7 +247,7 @@ fn main() {
             // Print Tree
             if !args.notree {
                 println!("=============");
-                calc.tree.print();
+                TreeNode::print(calc.tree,None);
             }
             return;
         },
@@ -285,7 +278,7 @@ fn main() {
         // Print Tree
         if !args.notree {
             println!("=============");
-            root.tree.print();
+            TreeNode::print(calc.tree,None);
         }
     }
 }
