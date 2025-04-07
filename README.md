@@ -1,5 +1,7 @@
 # Square Root Calculator
-![Example](https://raw.githubusercontent.com/slicetext/simplest_radical/master/example.mp4)
+
+https://github.com/user-attachments/assets/ba34ff12-0a07-4b7d-8dd4-54cd6bfbd0e2
+
 ## Features
 - Blazingly fast 🔥
 - Outputs Simplest Radical Form
