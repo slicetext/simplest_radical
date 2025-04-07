@@ -14,33 +14,27 @@ struct TreeNode {
 }
 
 impl TreeNode {
-    fn push(&mut self, node: TreeNode) -> u32 {
-        self.children.push(node);
-        return self.children.len() as u32 - 1;
-    }
     fn new(num: u32) -> Self {
         return TreeNode {
             value: num,
             children: vec![],
         };
     }
-}
-
-// implement display se we can print the tree, using BFS (Breadth first search)
-impl fmt::Display for TreeNode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn print(&self) {
         let mut queue: VecDeque<TreeNode> = vec![].into();
         queue.push_back(self.clone());
         while queue.len() > 0 {
             for i in queue.clone() {
+                if i.value != 0 {
+                }
                 // Detect dummy character
                 if i.value == 0 {
-                    writeln!(f, "").unwrap();
+                    println!("");
                     queue.pop_front();
                     continue;
                 } else {
                     // Print real character
-                    write!(f,"{} ",i.value).unwrap();
+                    print!("{} ",i.value);
                     queue.pop_front();
                 }
                 for j in i.children {
@@ -52,9 +46,9 @@ impl fmt::Display for TreeNode {
                 }
             }
         }
-        return Ok(());
     }
 }
+
 
 impl Index<usize> for TreeNode {
     type Output = TreeNode;
@@ -85,7 +79,7 @@ struct SqrtResult {
 }
 
 impl SqrtResult {
-    fn new(whole: u32, frac: u32, tree: &TreeNode, tree_pos: u32) -> Self {
+    fn new(whole: u32, frac: u32, tree: TreeNode, tree_pos: u32) -> Self {
         return SqrtResult {
             whole,
             frac,
@@ -105,6 +99,7 @@ impl fmt::Display for SqrtResult {
 struct Calc {
     squares: Vec<u32>,
     num: u32,
+    tree: TreeNode,
 }
 
 impl Calc {
@@ -112,6 +107,7 @@ impl Calc {
         let mut calc = Calc {
             squares: vec![],
             num,
+            tree: TreeNode::new(num),
         };
         calc.gen_squares(SQUARE_GEN_DEPTH);
         return calc;
@@ -145,8 +141,8 @@ impl Calc {
         return (1, num, false);
     }
     /// Recursively generate simplest radical form square root
-    fn sqrt(&self, result: Option<SqrtResult>) -> SqrtResult {
-        let mut r = match result {
+    fn sqrt(&mut self, result: Option<SqrtResult>) -> SqrtResult {
+        let r = match result {
             Some(r) => r,
             _ => SqrtResult {
                 whole: self.num,
@@ -156,26 +152,27 @@ impl Calc {
             },
         };
         let num = r.whole;
-        // Find pos in tree
-        let pos = match r.tree.children.len() > 0 {
-            true => &mut r.tree[r.tree_pos as usize],
-            false => &mut r.tree,
-        };
 
         let root = self.find_sqrt(num);
 
-        pos.push(TreeNode::new(root.0));
-        pos.push(TreeNode::new(root.1));
+        if self.tree.children.len() > 0 {
+            self.tree[r.tree_pos as usize].children.push(TreeNode::new(root.0));
+            self.tree[r.tree_pos as usize].children.push(TreeNode::new(root.1));
+        } else {
+            self.tree.children.push(TreeNode::new(root.0));
+            self.tree.children.push(TreeNode::new(root.1));
+        }
 
-        // TODO: make this actually work
         if root.2 {
+            let l_tree = r.tree_pos << 1;
+            let r_tree = (r.tree_pos << 1) | 0b1;
             let a = self.sqrt(
                 Some(
                     SqrtResult::new(
                         root.0,
                         0,
-                        &r.tree,
-                        r.tree_pos,
+                        self.tree.clone(),
+                        l_tree,
                     )
                 )
             );
@@ -184,15 +181,15 @@ impl Calc {
                     SqrtResult::new(
                         root.1,
                         0,
-                        &r.tree,
-                        r.tree_pos,
+                        self.tree.clone(),
+                        r_tree,
                     )
                 )
             );
-            return SqrtResult::new(a.whole * b.whole, a.frac + b.frac, &r.tree, r.tree_pos);
+            return SqrtResult::new(a.whole * b.whole, a.frac + b.frac, r.tree.clone(), r.tree_pos);
         }
 
-        return SqrtResult::new(root.0, root.1, &r.tree, r.tree_pos);
+        return SqrtResult::new(root.0, root.1, self.tree.clone(), r.tree_pos);
     }
 }
 
@@ -202,33 +199,33 @@ mod tests {
 
     #[test]
     fn test_square_num() {
-        let calc = Calc::new(16);
+        let mut calc = Calc::new(16);
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 4);
     }
     #[test]
     fn test_prime() {
-        let calc = Calc::new(17);
+        let mut calc = Calc::new(17);
         let root = calc.sqrt(None);
         assert_eq!(root.frac, 17);
     }
     #[test]
     fn test_not_square_num() {
-        let calc = Calc::new(12);
+        let mut calc = Calc::new(12);
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 2);
         assert_eq!(root.frac,  3);
     }
     #[test]
     fn test_more_steps() {
-        let calc = Calc::new(48);
+        let mut calc = Calc::new(48);
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 4);
         assert_eq!(root.frac,  3);
     }
     #[test]
     fn test_not_square_num_2() {
-        let calc = Calc::new(24);
+        let mut calc = Calc::new(24);
         let root = calc.sqrt(None);
         assert_eq!(root.whole, 2);
         assert_eq!(root.frac,  6);
@@ -251,13 +248,13 @@ fn main() {
     match args.number {
         Some(n) => {
             // Print root
-            let calc = Calc::new(n);
+            let mut calc = Calc::new(n);
             let root = calc.sqrt(None);
             println!("{root}");
             // Print Tree
             if !args.notree {
                 println!("=============");
-                println!("{}",root.tree);
+                calc.tree.print();
             }
             return;
         },
@@ -282,13 +279,13 @@ fn main() {
             .parse()
             .unwrap();
         // Get root and print it
-        let calc = Calc::new(input_num);
+        let mut calc = Calc::new(input_num);
         let root = calc.sqrt(None);
         println!("{root}");
         // Print Tree
         if !args.notree {
             println!("=============");
-            println!("{}",root.tree);
+            root.tree.print();
         }
     }
 }
