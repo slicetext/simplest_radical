@@ -65,16 +65,14 @@ impl IndexMut<usize> for TreeNode {
 struct SqrtResult {
     whole: u32,
     frac:  u32,
-    tree: TreeNode,
     tree_pos: u32,
 }
 
 impl SqrtResult {
-    fn new(whole: u32, frac: u32, tree: TreeNode, tree_pos: u32) -> Self {
+    fn new(whole: u32, frac: u32, tree_pos: u32) -> Self {
         return SqrtResult {
             whole,
             frac,
-            tree: tree.clone(),
             tree_pos,
         }
     }
@@ -138,7 +136,6 @@ impl Calc {
             _ => SqrtResult {
                 whole: self.num,
                 frac:  0,
-                tree:  TreeNode::new(self.num),
                 tree_pos: 0b0,
             },
         };
@@ -164,7 +161,6 @@ impl Calc {
                     SqrtResult::new(
                         root.0,
                         0,
-                        self.tree.clone(),
                         l_tree,
                     )
                 )
@@ -174,15 +170,14 @@ impl Calc {
                     SqrtResult::new(
                         root.1,
                         0,
-                        self.tree.clone(),
                         r_tree,
                     )
                 )
             );
-            return SqrtResult::new(a.whole * b.whole, a.frac + b.frac, r.tree.clone(), r.tree_pos);
+            return SqrtResult::new(a.whole * b.whole, a.frac + b.frac, r.tree_pos);
         }
 
-        return SqrtResult::new(root.0, root.1, self.tree.clone(), r.tree_pos);
+        return SqrtResult::new(root.0, root.1, r.tree_pos);
     }
 }
 
